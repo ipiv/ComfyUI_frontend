@@ -12,6 +12,7 @@ dotenv.config()
 
 const IS_DEV = process.env.NODE_ENV === 'development'
 const SHOULD_MINIFY = process.env.ENABLE_MINIFY === 'true'
+const GENERATE_TYPES = process.env.GENERATE_TYPES === 'true'
 
 interface ShimResult {
   code: string
@@ -135,10 +136,21 @@ export default defineConfig({
       extensions: ['vue']
     }),
 
-    dts({
-      outDir: "dist/types",
-      entryRoot: "src"
-    })
+    // Conditionally include dts plugin
+    ...(GENERATE_TYPES ? [
+      dts({
+        outDir: "dist/types",
+        entryRoot: "src",
+        include: [
+          'src/types/**/*.ts',
+          'src/scripts/**/*.ts',
+        ],
+        exclude: [
+          'src/**/*.vue',
+        ],
+        declarationOnly: true,
+      })
+    ] : [])
   ],
 
   build: {
