@@ -142,6 +142,7 @@ export default defineConfig({
         outDir: "dist/types",
         entryRoot: "src",
         include: [
+          'src/index.ts',
           'src/types/**/*.ts',
           'src/scripts/**/*.ts',
         ],
@@ -149,6 +150,8 @@ export default defineConfig({
           'src/**/*.vue',
         ],
         declarationOnly: true,
+        rollupTypes: true,
+        tsconfigPath: "tsconfig.json"
       })
     ] : [])
   ],
