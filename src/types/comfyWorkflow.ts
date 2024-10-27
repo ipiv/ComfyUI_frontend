@@ -21,6 +21,14 @@ export const zSlotIndex = z.union([
 // - https://github.com/rgthree/rgthree-comfy Context Big node is using array as type.
 export const zDataType = z.union([z.string(), z.array(z.string()), z.number()])
 
+const zVector2 = z.union([
+  z
+    .object({ 0: z.number(), 1: z.number() })
+    .passthrough()
+    .transform((v) => [v[0], v[1]]),
+  z.tuple([z.number(), z.number()])
+])
+
 // Definition of an AI model file used in the workflow.
 const zModelFile = z.object({
   name: z.string(),
@@ -30,14 +38,27 @@ const zModelFile = z.object({
   directory: z.string()
 })
 
-const zComfyLink = z.tuple([
-  z.number(), // Link id
-  zNodeId, // Node id of source node
-  zSlotIndex, // Output slot# of source node
-  zNodeId, // Node id of destination node
-  zSlotIndex, // Input slot# of destination node
-  zDataType // Data type
+const zLlink = [
+  zNodeId, // 1: Node id of source node
+  zSlotIndex, // 2: Output slot# of source node
+  zNodeId, // 3: Node id of destination node
+  zSlotIndex, // 4: Input slot# of destination node
+  zDataType // 5: Data type
+]
+
+const zComfyLink = z.union([
+  // 0: LLink.id
+  z.tuple([z.number(), ...zLlink]),
+  // 6: LLink.parentId
+  z.tuple([z.number(), ...zLlink, z.number()])
 ])
+
+const zReroute = z.object({
+  id: z.number(),
+  parentId: z.number().optional(),
+  pos: zVector2,
+  linkIds: z.array(z.number()).nullish()
+})
 
 const zNodeOutput = z
   .object({
@@ -72,14 +93,6 @@ const zProperties = z
     ['Node name for S&R']: z.string().optional()
   })
   .passthrough()
-
-const zVector2 = z.union([
-  z
-    .object({ 0: z.number(), 1: z.number() })
-    .passthrough()
-    .transform((v) => [v[0], v[1]]),
-  z.tuple([z.number(), z.number()])
-])
 
 const zWidgetValues = z.union([z.array(z.any()), z.record(z.any())])
 
@@ -148,8 +161,10 @@ export const zComfyWorkflow = z
   .object({
     last_node_id: zNodeId,
     last_link_id: z.number(),
+    last_reroute_id: z.number().optional(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),
+    reroutes: z.array(zReroute).optional(),
     groups: z.array(zGroup).optional(),
     config: zConfig.optional().nullable(),
     extra: zExtra.optional().nullable(),
