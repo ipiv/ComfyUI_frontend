@@ -53,6 +53,16 @@ const zComfyLink = z.union([
   z.tuple([z.number(), ...zLlink, z.number()])
 ])
 
+const zComfyLinkObject = z.object({
+  id: z.number(),
+  origin_id: zNodeId,
+  origin_slot: zSlotIndex,
+  target_id: zNodeId,
+  target_slot: zSlotIndex,
+  type: zDataType,
+  parentId: z.number().optional()
+})
+
 const zReroute = z.object({
   id: z.number(),
   parentId: z.number().optional(),
@@ -164,6 +174,7 @@ export const zComfyWorkflow = z
     last_reroute_id: z.number().optional(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),
+    linksV2: z.array(zComfyLinkObject).optional(),
     reroutes: z.array(zReroute).optional(),
     groups: z.array(zGroup).optional(),
     config: zConfig.optional().nullable(),
