@@ -91,7 +91,7 @@ export class ChangeTracker {
   checkState() {
     if (!this.app.graph || this.changeCount) return
     // @ts-expect-error zod types issue. Will be fixed after we enable ts-strict
-    const currentState = this.app.graph.serialize() as ComfyWorkflowJSON
+    const currentState = this.app.graph.asSerialisable() as ComfyWorkflowJSON
     if (!this.activeState) {
       this.activeState = clone(currentState)
       return

@@ -431,10 +431,10 @@ export class ComfyApp {
   }
 
   #addRestoreWorkflowView() {
-    const serialize = LGraph.prototype.serialize
+    const asSerialisable = LGraph.prototype.asSerialisable
     const self = this
-    LGraph.prototype.serialize = function () {
-      const workflow = serialize.apply(this, arguments)
+    LGraph.prototype.asSerialisable = function () {
+      const workflow = asSerialisable.apply(this, arguments)
 
       // Store the drag & scale info in the serialized workflow if the setting is enabled
       if (self.enableWorkflowViewRestore.value) {
@@ -2372,7 +2372,7 @@ export class ComfyApp {
    */
   serializeGraph(graph: LGraph = this.graph) {
     const sortNodes = useSettingStore().get('Comfy.Workflow.SortNodeIdOnSave')
-    return graph.serialize({ sortNodes })
+    return graph.asSerialisable({ sortNodes })
   }
 
   /**
