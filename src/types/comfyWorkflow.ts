@@ -38,6 +38,13 @@ const zModelFile = z.object({
   directory: z.string()
 })
 
+const zGraphState = z.object({
+  lastGroupid: z.number().optional(),
+  lastNodeId: z.number().optional(),
+  lastLinkId: z.number().optional(),
+  lastRerouteId: z.number().optional()
+})
+
 const zLlink = [
   zNodeId, // 1: Node id of source node
   zSlotIndex, // 2: Output slot# of source node
@@ -174,7 +181,6 @@ export const zComfyWorkflow = z
     last_reroute_id: z.number().optional(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),
-    linksV2: z.array(zComfyLinkObject).optional(),
     reroutes: z.array(zReroute).optional(),
     groups: z.array(zGroup).optional(),
     config: zConfig.optional().nullable(),
@@ -184,21 +190,43 @@ export const zComfyWorkflow = z
   })
   .passthrough()
 
+const zComfyWorkflow1 = z
+  .object({
+    version: z.number(),
+    config: zConfig.optional().nullable(),
+    state: zGraphState,
+    groups: z.array(zGroup).optional(),
+    nodes: z.array(zComfyNode),
+    links: z.array(zComfyLinkObject).optional(),
+    reroutes: z.array(zReroute).optional(),
+    extra: zExtra.optional().nullable(),
+    models: z.array(zModelFile).optional()
+  })
+  .passthrough()
+
 export type NodeInput = z.infer<typeof zNodeInput>
 export type NodeOutput = z.infer<typeof zNodeOutput>
 export type ComfyLink = z.infer<typeof zComfyLink>
 export type ComfyNode = z.infer<typeof zComfyNode>
-export type ComfyWorkflowJSON = z.infer<typeof zComfyWorkflow>
+export type ComfyWorkflowJSON = z.infer<
+  typeof zComfyWorkflow | typeof zComfyWorkflow1
+>
 
 export async function validateComfyWorkflow(
   data: any,
   onError: (error: string) => void = console.warn
 ): Promise<ComfyWorkflowJSON | null> {
-  const result = await zComfyWorkflow.safeParseAsync(data)
+  const result = await zComfyWorkflow1.safeParseAsync(data)
   if (!result.success) {
-    const error = fromZodError(result.error)
-    onError(`Invalid workflow against zod schema:\n${error}`)
-    return null
+    const oldWorkflowResult = await zComfyWorkflow.safeParseAsync(data)
+
+    if (!oldWorkflowResult.success) {
+      const error = fromZodError(result.error)
+      onError(`Invalid workflow against zod schema:\n${error}`)
+      return null
+    }
+
+    return oldWorkflowResult.data
   }
   return result.data
 }
