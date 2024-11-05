@@ -1,4 +1,4 @@
-import { z } from 'zod'
+import { z, type SafeParseReturnType } from 'zod'
 import { fromZodError } from 'zod-validation-error'
 
 // GroupNode is hacking node id to be a string, so we need to allow that.
@@ -212,21 +212,32 @@ export type ComfyWorkflowJSON = z.infer<
   typeof zComfyWorkflow | typeof zComfyWorkflow1
 >
 
+const zWorkflowVersion = z.object({
+  version: z.number()
+})
+
 export async function validateComfyWorkflow(
-  data: any,
+  data: unknown,
   onError: (error: string) => void = console.warn
 ): Promise<ComfyWorkflowJSON | null> {
-  const result = await zComfyWorkflow1.safeParseAsync(data)
-  if (!result.success) {
-    const oldWorkflowResult = await zComfyWorkflow.safeParseAsync(data)
+  const versionResult = zWorkflowVersion.safeParse(data)
 
-    if (!oldWorkflowResult.success) {
-      const error = fromZodError(result.error)
-      onError(`Invalid workflow against zod schema:\n${error}`)
-      return null
-    }
-
-    return oldWorkflowResult.data
+  let result: SafeParseReturnType<unknown, ComfyWorkflowJSON>
+  if (!versionResult.success) {
+    // Invalid workflow
+    const error = fromZodError(versionResult.error)
+    onError(`Workflow does not contain a valid version.  Zod error:\n${error}`)
+    return null
+  } else if (versionResult.data.version === 1) {
+    // Schema version 1
+    result = await zComfyWorkflow1.safeParseAsync(data)
+  } else {
+    // Unknown or old version: 0.4
+    result = await zComfyWorkflow.safeParseAsync(data)
   }
-  return result.data
+  if (result.success) return result.data
+
+  const error = fromZodError(result.error)
+  onError(`Invalid workflow against zod schema:\n${error}`)
+  return null
 }
