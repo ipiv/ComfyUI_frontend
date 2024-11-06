@@ -1,8 +1,10 @@
 import type { ComfyWorkflowJSON } from '@/types/comfyWorkflow'
 
 export const defaultGraph: ComfyWorkflowJSON = {
-  last_node_id: 9,
-  last_link_id: 9,
+  state: {
+    lastNodeId: 9,
+    lastLinkId: 9
+  },
   nodes: [
     {
       id: 7,
@@ -120,20 +122,83 @@ export const defaultGraph: ComfyWorkflowJSON = {
     }
   ],
   links: [
-    [1, 4, 0, 3, 0, 'MODEL'],
-    [2, 5, 0, 3, 3, 'LATENT'],
-    [3, 4, 1, 6, 0, 'CLIP'],
-    [4, 6, 0, 3, 1, 'CONDITIONING'],
-    [5, 4, 1, 7, 0, 'CLIP'],
-    [6, 7, 0, 3, 2, 'CONDITIONING'],
-    [7, 3, 0, 8, 0, 'LATENT'],
-    [8, 4, 2, 8, 1, 'VAE'],
-    [9, 8, 0, 9, 0, 'IMAGE']
+    {
+      id: 1,
+      origin_id: 4,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 0,
+      type: 'MODEL'
+    },
+    {
+      id: 2,
+      origin_id: 5,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 3,
+      type: 'LATENT'
+    },
+    {
+      id: 3,
+      origin_id: 4,
+      origin_slot: 1,
+      target_id: 6,
+      target_slot: 0,
+      type: 'CLIP'
+    },
+    {
+      id: 4,
+      origin_id: 6,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 1,
+      type: 'CONDITIONING'
+    },
+    {
+      id: 5,
+      origin_id: 4,
+      origin_slot: 1,
+      target_id: 7,
+      target_slot: 0,
+      type: 'CLIP'
+    },
+    {
+      id: 6,
+      origin_id: 7,
+      origin_slot: 0,
+      target_id: 3,
+      target_slot: 2,
+      type: 'CONDITIONING'
+    },
+    {
+      id: 7,
+      origin_id: 3,
+      origin_slot: 0,
+      target_id: 8,
+      target_slot: 0,
+      type: 'LATENT'
+    },
+    {
+      id: 8,
+      origin_id: 4,
+      origin_slot: 2,
+      target_id: 8,
+      target_slot: 1,
+      type: 'VAE'
+    },
+    {
+      id: 9,
+      origin_id: 8,
+      origin_slot: 0,
+      target_id: 9,
+      target_slot: 0,
+      type: 'IMAGE'
+    }
   ],
   groups: [],
   config: {},
   extra: {},
-  version: 0.4
+  version: 1
 }
 
 export const defaultGraphJSON = JSON.stringify(defaultGraph)
