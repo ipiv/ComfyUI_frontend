@@ -45,19 +45,13 @@ const zGraphState = z.object({
   lastRerouteId: z.number().optional()
 })
 
-const zLlink = [
-  zNodeId, // 1: Node id of source node
-  zSlotIndex, // 2: Output slot# of source node
-  zNodeId, // 3: Node id of destination node
-  zSlotIndex, // 4: Input slot# of destination node
-  zDataType // 5: Data type
-]
-
-const zComfyLink = z.union([
-  // 0: LLink.id
-  z.tuple([z.number(), ...zLlink]),
-  // 6: LLink.parentId
-  z.tuple([z.number(), ...zLlink, z.number()])
+const zComfyLink = z.tuple([
+  z.number(), // Link id
+  zNodeId, // Node id of source node
+  zSlotIndex, // Output slot# of source node
+  zNodeId, // Node id of destination node
+  zSlotIndex, // Input slot# of destination node
+  zDataType // Data type
 ])
 
 const zComfyLinkObject = z.object({
@@ -178,10 +172,8 @@ export const zComfyWorkflow = z
   .object({
     last_node_id: zNodeId,
     last_link_id: z.number(),
-    last_reroute_id: z.number().optional(),
     nodes: z.array(zComfyNode),
     links: z.array(zComfyLink),
-    reroutes: z.array(zReroute).optional(),
     groups: z.array(zGroup).optional(),
     config: zConfig.optional().nullable(),
     extra: zExtra.optional().nullable(),
