@@ -2,6 +2,7 @@
 import { validateComfyWorkflow } from '@/types/comfyWorkflow'
 import { defaultGraph } from '@/scripts/defaultGraph'
 import fs from 'fs'
+import { SerialisableGraph } from '@comfyorg/litegraph'
 
 const WORKFLOW_DIR = 'tests-ui/workflows'
 
@@ -35,6 +36,11 @@ describe('parseComfyWorkflow', () => {
     workflow.version = '1.0.1' // Invalid format.
     expect(await validateComfyWorkflow(workflow)).toBeNull()
 
+    // Should be null; defaultGraph schema version is 1
+    workflow.version = 0.4
+    expect(await validateComfyWorkflow(workflow)).toBeNull()
+
+    // New schema version
     workflow.version = 1
     expect(await validateComfyWorkflow(workflow)).not.toBeNull()
   })
@@ -108,17 +114,18 @@ describe('parseComfyWorkflow', () => {
   })
 
   it('workflow.links', async () => {
-    const workflow = JSON.parse(JSON.stringify(defaultGraph))
+    const workflow: SerialisableGraph = JSON.parse(JSON.stringify(defaultGraph))
 
     workflow.links = [
-      [
-        1, // Link id
-        '100:1', // Node id of source node
-        '12', // Output slot# of source node
-        '100:2', // Node id of destination node
-        15, // Input slot# of destination node
-        'INT' // Data type
-      ]
+      {
+        id: 1, // Link id
+        origin_id: '100:1', // Node id of source node
+        // @ts-expect-error Number stored as string - intentional for tests, apparently.
+        origin_slot: '12', // Output slot# of source node
+        target_id: '100:2', // Node id of destination node
+        target_slot: 15, // Input slot# of destination node
+        type: 'INT' // Data type
+      }
     ]
     expect(await validateComfyWorkflow(workflow)).not.toBeNull()
   })
