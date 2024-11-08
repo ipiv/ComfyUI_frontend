@@ -134,7 +134,7 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
     combo: {
       key: 'p'
     },
-    commandId: 'Comfy.Canvas.ToggleSelectedNodes.Pin',
+    commandId: 'Comfy.Canvas.ToggleSelected.Pin',
     targetSelector: '#graph-canvas'
   },
   {
@@ -167,5 +167,11 @@ export const CORE_KEYBINDINGS: Keybinding[] = [
       ctrl: true
     },
     commandId: 'Workspace.ToggleBottomPanelTab.integrated-terminal'
+  },
+  {
+    combo: {
+      key: 'f'
+    },
+    commandId: 'Workspace.ToggleFocusMode'
   }
 ]

@@ -6,7 +6,7 @@ module.exports = async function () {
     disconnect() {}
   }
 
-  const { nop } = require('./utils/nopProxy')
+  const { nop } = require('../utils/nopProxy')
   global.enableWebGLCanvas = nop
 
   HTMLCanvasElement.prototype.getContext = nop
@@ -45,11 +45,20 @@ module.exports = async function () {
     }
   })
 
-  jest.mock('@/stores/workspaceStateStore', () => {
+  jest.mock('@/stores/workspaceStore', () => {
     return {
       useWorkspaceStore: () => ({
         shiftDown: false,
-        spinner: false
+        spinner: false,
+        focusMode: false,
+        toggleFocusMode: jest.fn(),
+        workflow: {
+          activeWorkflow: null,
+          syncWorkflows: jest.fn(),
+          getWorkflowByPath: jest.fn(),
+          createTemporary: jest.fn(),
+          openWorkflow: jest.fn()
+        }
       })
     }
   })

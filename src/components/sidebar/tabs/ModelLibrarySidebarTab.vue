@@ -31,6 +31,7 @@
         class="model-lib-search-box p-4"
         v-model:modelValue="searchQuery"
         :placeholder="$t('searchModels') + '...'"
+        @search="handleSearch"
       />
     </template>
     <template #body>
@@ -122,7 +123,7 @@ import type {
   RenderedTreeExplorerNode,
   TreeExplorerNode
 } from '@/types/treeExplorerTypes'
-import { computed, ref, watch, toRef, onMounted } from 'vue'
+import { computed, ref, watch, toRef, onMounted, nextTick } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
@@ -146,25 +147,33 @@ const settingStore = useSettingStore()
 const toastStore = useToastStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
-const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
+const { expandNode, toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
 
-const filteredModels = computed<ComfyModelDef[]>(() => {
-  if (searchQuery.value) {
-    const search = searchQuery.value.toLocaleLowerCase()
-    return modelStore.models.filter((model: ComfyModelDef) => {
-      return model.searchable.includes(search)
-    })
+const filteredModels = ref<ComfyModelDef[]>([])
+const handleSearch = async (query: string) => {
+  if (!query) {
+    filteredModels.value = []
+    expandedKeys.value = {}
+    return
   }
-  return modelStore.models
-})
+  // Load all models to ensure we have the latest data
+  await modelStore.loadModels()
+  const search = query.toLocaleLowerCase()
+  filteredModels.value = modelStore.models.filter((model: ComfyModelDef) => {
+    return model.searchable.includes(search)
+  })
+
+  nextTick(() => {
+    expandNode(root.value)
+  })
+}
 
 type ModelOrFolder = ComfyModelDef | ModelFolder
 
 const root = computed<TreeNode>(() => {
-  const allNodes: ModelOrFolder[] = [
-    ...modelStore.modelFolders,
-    ...filteredModels.value
-  ]
+  const allNodes: ModelOrFolder[] = searchQuery.value
+    ? filteredModels.value
+    : [...modelStore.modelFolders, ...modelStore.models]
   return buildTree(allNodes, (modelOrFolder: ModelOrFolder) =>
     modelOrFolder.key.split('/')
   )

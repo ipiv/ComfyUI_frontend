@@ -8,6 +8,9 @@ const messages = {
     selectFiles: 'Select Files',
     upload: 'Upload',
     cancel: 'Cancel',
+    firstTimeUIMessage:
+      'This is the first time you use the new UI. Choose "Menu > Use New Menu > Disabled" to restore the old UI.',
+    download: 'Download',
     loadAllFolders: 'Load All Folders',
     refresh: 'Refresh',
     terminal: 'Terminal',
@@ -82,6 +85,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: 'Hide Menu',
+      showMenu: 'Show Menu',
       batchCount: 'Batch Count',
       batchCountTooltip:
         'The number of times the workflow generation should be queued',
@@ -122,6 +127,9 @@ const messages = {
     }
   },
   zh: {
+    firstTimeUIMessage:
+      '这是您第一次使用新界面。选择“Menu > Use New Menu > Disabled”以恢复旧界面。',
+    download: '下载',
     loadAllFolders: '加载所有文件夹',
     refresh: '刷新',
     terminal: '终端',
@@ -197,6 +205,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: '隐藏菜单',
+      showMenu: '显示菜单',
       batchCount: '批次数量',
       batchCountTooltip: '工作流生成次数',
       autoQueue: '自动执行',
@@ -235,6 +245,7 @@ const messages = {
     }
   },
   ru: {
+    download: 'Скачать',
     refresh: 'Обновить',
     loadAllFolders: 'Загрузить все папки',
     terminal: 'Терминал',
@@ -310,6 +321,8 @@ const messages = {
       }
     },
     menu: {
+      hideMenu: 'Скрыть меню',
+      showMenu: 'Показать меню',
       batchCount: 'Количество пакетов',
       batchCountTooltip:
         'Количество раз, когда генерация рабочего процесса должна быть помещена в очередь',
