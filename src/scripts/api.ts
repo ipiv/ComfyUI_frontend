@@ -11,6 +11,7 @@ import {
   type User,
   type Settings,
   type UserDataFullInfo,
+  type UploadModelStatus,
   validateComfyNodeDef
 } from '@/types/apiTypes'
 import axios from 'axios'
@@ -728,7 +729,7 @@ class ComfyApi extends EventTarget {
     file: File,
     model_directory: string,
     progress_interval: number = 1
-  ): Promise<DownloadModelStatus> {
+  ): Promise<UploadModelStatus> {
     return new Promise((resolve, reject) => {
       const formData = new FormData()
       formData.append('file', file)

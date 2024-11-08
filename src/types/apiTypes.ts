@@ -520,3 +520,12 @@ export type SystemStats = z.infer<typeof zSystemStats>
 export type User = z.infer<typeof zUser>
 export type UserData = z.infer<typeof zUserData>
 export type UserDataFullInfo = z.infer<typeof zUserDataFullInfo>
+
+export interface UploadModelStatus {
+  status: 'success' | 'error' | 'in_progress'
+  filename: string
+  progress_percentage?: number
+  bytes_transferred?: number
+  total_bytes?: number
+  message?: string
+}

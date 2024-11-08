@@ -214,7 +214,7 @@ export const useModelStore = defineStore('models', () => {
     try {
       const status = await api.uploadModel(file, folder)
 
-      if (status.status === 'completed') {
+      if (status.status === 'success') {
         // Reset the folder state to trigger a reload
         if (folder && modelFolderByName.value[folder]) {
           modelFolderByName.value[folder].state = ResourceState.Uninitialized
