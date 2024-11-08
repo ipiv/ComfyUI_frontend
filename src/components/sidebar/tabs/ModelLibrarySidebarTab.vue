@@ -5,6 +5,13 @@
   >
     <template #tool-buttons>
       <Button
+        icon="pi pi-upload"
+        @click="openUploadDialog"
+        severity="secondary"
+        text
+        v-tooltip="$t('uploadModel')"
+      />
+      <Button
         icon="pi pi-refresh"
         @click="modelStore.loadModelFolders"
         severity="secondary"
@@ -39,6 +46,61 @@
     </template>
   </SidebarTabTemplate>
   <div id="model-library-model-preview-container" />
+  <Dialog
+    v-model:visible="showUploadDialog"
+    :modal="true"
+    :header="$t('uploadModel')"
+    class="p-dialog-model-upload"
+  >
+    <div class="upload-form p-4">
+      <div class="mb-3">
+        <label class="block mb-2">{{ $t('selectFolder') }}</label>
+        <Dropdown
+          v-model="selectedFolder"
+          :options="availableFolders"
+          optionLabel="label"
+          class="w-full"
+        />
+      </div>
+      <div class="mb-3">
+        <label class="block mb-2">{{ $t('selectFiles') }}</label>
+        <FileUpload
+          v-model="selectedFiles"
+          mode="basic"
+          :multiple="true"
+          accept=".ckpt,.safetensors,.pt,.bin,.pth,.yaml,.json"
+          :maxFileSize="10000000000"
+          :auto="false"
+          chooseLabel="Browse"
+          @select="onFileSelect"
+          @uploader="uploadFiles"
+          :customUpload="true"
+        />
+      </div>
+      <div v-if="uploadProgress > 0 || uploading" class="mb-3">
+        <label class="block mb-2">Upload Progress</label>
+        <ProgressBar :value="uploadProgress" :class="{ uploading: uploading }">
+          <template #value>
+            {{ uploadStatus }}
+          </template>
+        </ProgressBar>
+      </div>
+    </div>
+    <template #footer>
+      <Button
+        :label="$t('upload')"
+        @click="uploadFiles"
+        :loading="uploading"
+        :disabled="!selectedFiles.length || !selectedFolder"
+      />
+      <Button
+        :label="$t('cancel')"
+        @click="closeUploadDialog"
+        severity="secondary"
+        text
+      />
+    </template>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -64,9 +126,24 @@ import { computed, ref, watch, toRef, onMounted } from 'vue'
 import type { TreeNode } from 'primevue/treenode'
 import { app } from '@/scripts/app'
 import { buildTree } from '@/utils/treeUtil'
+import Dialog from 'primevue/dialog'
+import FileUpload from 'primevue/fileupload'
+import Dropdown from 'primevue/dropdown'
+import { useToastStore } from '@/stores/toastStore'
+import { api } from '@/scripts/api'
+import ProgressBar from 'primevue/progressbar'
+
+interface DownloadModelStatus {
+  status: 'in_progress' | 'completed' | 'error'
+  filename: string
+  progress_percentage: number
+  message?: string
+}
+
 const modelStore = useModelStore()
 const modelToNodeStore = useModelToNodeStore()
 const settingStore = useSettingStore()
+const toastStore = useToastStore()
 const searchQuery = ref<string>('')
 const expandedKeys = ref<Record<string, boolean>>({})
 const { toggleNodeOnEvent } = useTreeExpansion(expandedKeys)
@@ -179,11 +256,119 @@ onMounted(async () => {
     await modelStore.loadModels()
   }
 })
+
+const showUploadDialog = ref(false)
+const selectedFolder = ref<{ label: string; value: string } | null>(null)
+const selectedFiles = ref([])
+const uploading = ref(false)
+
+const availableFolders = computed(() => {
+  return modelStore.modelFolders.map((folder) => ({
+    label: folder.key,
+    value: folder.key
+  }))
+})
+
+const openUploadDialog = () => {
+  showUploadDialog.value = true
+  selectedFiles.value = []
+  selectedFolder.value = null
+}
+
+const closeUploadDialog = () => {
+  showUploadDialog.value = false
+  selectedFiles.value = []
+  selectedFolder.value = null
+}
+
+const onFileSelect = (event: { files: File[] }) => {
+  selectedFiles.value = event.files
+}
+
+const uploadProgress = ref(0)
+const uploadStatus = ref('')
+const currentUploadFile = ref('')
+
+const updateUploadStatus = (progress: number, fileName: string) => {
+  uploadProgress.value = progress
+  if (progress === 100) {
+    uploadStatus.value = `Processing ${fileName}...`
+  } else {
+    uploadStatus.value = `${progress.toFixed(1)}%`
+  }
+}
+
+const uploadFiles = async () => {
+  if (!selectedFiles.value.length || !selectedFolder.value) return
+  try {
+    uploading.value = true
+    uploadProgress.value = 0
+    toastStore.add({
+      severity: 'info',
+      summary: 'Upload started',
+      detail: `Starting upload...`,
+      life: 2000
+    })
+
+    for (const file of selectedFiles.value) {
+      try {
+        currentUploadFile.value = file.name
+        updateUploadStatus(0, file.name)
+
+        const status = await modelStore.uploadModel({
+          file: file,
+          folder: selectedFolder.value.value.split('/')[0]
+        })
+
+        if (status.status === 'completed') {
+          updateUploadStatus(100, file.name)
+          toastStore.add({
+            severity: 'success',
+            summary: 'Uploaded',
+            detail: `Successfully uploaded ${file.name}`,
+            life: 4000
+          })
+        } else if (status.status === 'error') {
+          toastStore.addAlert(
+            `Failed to upload ${file.name}: ${status.message}`
+          )
+        }
+      } catch (error) {
+        toastStore.addAlert(`Failed to upload ${file.name}: ${error.message}`)
+      }
+    }
+
+    closeUploadDialog()
+  } catch (error) {
+    console.error('Upload failed:', error)
+    toastStore.addAlert(`Upload failed: ${error.message}`)
+  } finally {
+    uploading.value = false
+    uploadProgress.value = 0
+    uploadStatus.value = ''
+    currentUploadFile.value = ''
+  }
+}
+
+// Update progress event listener
+onMounted(() => {
+  api.addEventListener(
+    'upload_progress',
+    (event: CustomEvent<DownloadModelStatus>) => {
+      const detail = event.detail
+      if (detail.status === 'in_progress' && uploading.value) {
+        updateUploadStatus(detail.progress_percentage, detail.filename)
+      }
+    }
+  )
+})
 </script>
 
-<style scoped>
-:deep(.pi-fake-spacer) {
-  height: 1px;
-  width: 16px;
+<style>
+.p-dialog.p-dialog-model-upload {
+  min-width: 400px;
+}
+.uploading {
+  opacity: 0.8;
 }
 </style>

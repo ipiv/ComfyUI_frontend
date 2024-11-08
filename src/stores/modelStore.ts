@@ -210,11 +210,31 @@ export const useModelStore = defineStore('models', () => {
     return Promise.all(modelFolders.value.map((folder) => folder.load()))
   }
 
+  async function uploadModel({ file, folder }: { file: File; folder: string }) {
+    try {
+      const status = await api.uploadModel(file, folder)
+
+      if (status.status === 'completed') {
+        // Reset the folder state to trigger a reload
+        if (folder && modelFolderByName.value[folder]) {
+          modelFolderByName.value[folder].state = ResourceState.Uninitialized
+          await modelFolderByName.value[folder].load()
+        }
+      }
+
+      return status
+    } catch (error) {
+      console.error('Model upload failed:', error)
+      throw error
+    }
+  }
+
   return {
     models,
     modelFolders,
     loadModelFolders,
     loadModels,
-    getLoadedModelFolder
+    getLoadedModelFolder,
+    uploadModel
   }
 })

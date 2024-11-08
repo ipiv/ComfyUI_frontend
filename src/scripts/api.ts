@@ -753,6 +753,113 @@ class ComfyApi extends EventTarget {
   async getFolderPaths(): Promise<Record<string, string[]>> {
     return (await axios.get(this.internalURL('/folder_paths'))).data
   }
+
+  async uploadModel(
+    file: File,
+    model_directory: string,
+    progress_interval: number = 1
+  ): Promise<DownloadModelStatus> {
+    return new Promise((resolve, reject) => {
+      const formData = new FormData()
+      formData.append('file', file)
+      formData.append('model_directory', model_directory)
+      formData.append('progress_interval', progress_interval.toString())
+
+      const xhr = new XMLHttpRequest()
+      xhr.timeout = 3600000 // 1 hour timeout
+
+      // Handle server-sent progress updates
+      let uploadComplete = false
+
+      xhr.upload.addEventListener('progress', (event) => {
+        if (event.lengthComputable && !uploadComplete) {
+          const percentComplete = (event.loaded / event.total) * 100
+          this.dispatchEvent(
+            new CustomEvent('upload_progress', {
+              detail: {
+                status: 'in_progress',
+                filename: file.name,
+                progress_percentage: percentComplete,
+                bytes_transferred: event.loaded,
+                total_bytes: event.total
+              }
+            })
+          )
+        }
+      })
+
+      xhr.addEventListener('readystatechange', () => {
+        if (xhr.readyState === 3) {
+          // Receiving data
+          const lines = xhr.responseText.split('\n')
+          for (const line of lines) {
+            if (line) {
+              try {
+                const update = JSON.parse(line)
+                if (update.status === 'in_progress') {
+                  this.dispatchEvent(
+                    new CustomEvent('upload_progress', {
+                      detail: update
+                    })
+                  )
+                }
+              } catch (e) {
+                // Ignore parse errors for incomplete lines
+              }
+            }
+          }
+        }
+      })
+
+      xhr.addEventListener('loadstart', () => {
+        console.log('Upload started')
+      })
+
+      xhr.addEventListener('load', () => {
+        console.log('Upload completed')
+        if (xhr.status >= 200 && xhr.status < 300) {
+          try {
+            const response = JSON.parse(xhr.responseText)
+            resolve(response)
+          } catch (e) {
+            reject(new Error(`Upload failed: Invalid response format`))
+          }
+        } else {
+          reject(
+            new Error(`Upload failed: ${xhr.responseText || xhr.statusText}`)
+          )
+        }
+      })
+
+      xhr.addEventListener('error', () => {
+        console.error('Upload error occurred')
+        reject(new Error('Upload failed: Network error'))
+      })
+
+      xhr.addEventListener('timeout', () => {
+        console.error('Upload timed out')
+        reject(new Error('Upload failed: Request timed out'))
+      })
+
+      xhr.addEventListener('abort', () => {
+        console.error('Upload aborted')
+        reject(new Error('Upload failed: Request aborted'))
+      })
+
+      xhr.open('POST', this.apiURL('/internal/models/upload'))
+      xhr.setRequestHeader('Comfy-User', this.user)
+
+      try {
+        xhr.send(formData)
+      } catch (error) {
+        if (error instanceof Error) {
+          reject(new Error(`Upload failed: ${error.message}`))
+        } else {
+          reject(new Error('Upload failed: Unknown error'))
+        }
+      }
+    })
+  }
 }
 
 export const api = new ComfyApi()

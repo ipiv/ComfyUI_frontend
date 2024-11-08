@@ -2,6 +2,12 @@ import { createI18n } from 'vue-i18n'
 
 const messages = {
   en: {
+    uploadModel: 'Upload Files',
+    uploading: 'Uploading',
+    selectFolder: 'Select Folder',
+    selectFiles: 'Select Files',
+    upload: 'Upload',
+    cancel: 'Cancel',
     loadAllFolders: 'Load All Folders',
     refresh: 'Refresh',
     terminal: 'Terminal',
